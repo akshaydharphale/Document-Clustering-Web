@@ -18,19 +18,16 @@
 <br>
 <%
 
-//String feature = request.getParameter("selectfeature");
-//String cluster = request.getParameter("selectcluster");
+String feature = request.getParameter("selectfeature");
+String cluster = request.getParameter("selectcluster");
+MainFile mfObj = new MainFile();
+mfObj.drawBarGraph(feature,cluster);
 
-//MainFile mfObj = new MainFile();
-//mfObj.drawBarGraph(feature,cluster);
-
-//File f=new File("");
-//String name=f.getAbsolutePath()+ "\\chart_" +feature+".png";
-//System.out.println(name);
-//out.println("<h1>" + "BAR Graph Feature vs Cluster </h1>");
-//out.print("<center><img src='"+name+"' alt='bar chart'  width='800' height='600' border='0' /></center>");
+File f=new File("");
+String name=f.getAbsolutePath()+ "\\chart_" +feature+".png";
+System.out.println(name);
+out.println("<h1>" + "BAR Graph Feature vs Cluster </h1>");
+out.print("<center><img src='"+name+"' alt='bar chart'  width='800' height='600' border='0' /></center>");
 %>
-<h1>BAR Graph Feature vs Cluster </h1>
-<center><img src="E:\eclipse-jee-luna-R-win32-x86_64\eclipse\chart_4.png" alt='bar chart'  width='800' height='600' border='0' /></center>
 </body>
 </html>

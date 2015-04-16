@@ -145,12 +145,6 @@ public class MainFile {
 		uniqNE=new TreeSet<String>();
 		docNE=new HashMap<String, DocInfo>();
 		featureChoice=new ArrayList<Integer>(diffrentFeatures);	//user can enter their choice of features and it is specified in this object
-
-		//featureChoice.add(5);
-		//featureChoice.add(4);
-		//featureChoice.add(2);
-		
-		
 		
 		int selected_features;
 		for(String s:feature)
@@ -159,9 +153,7 @@ public class MainFile {
 			featureChoice.add(selected_features);
 		}
 		
-		
-		//featureChoice.add(1);
-		//akshay check
+
 	
 	}
 	
