@@ -1,7 +1,9 @@
+<%@page import="com.extraction.MainFile"%>
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1"
     pageEncoding="ISO-8859-1"%>
     
-<%@ page import="java.io.File" %>    
+<%@ page import="java.io.File" %>  
+<%@ page import="java.util.*" %>  
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
     "http://www.w3.org/TR/html4/loose.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -54,26 +56,105 @@
         
         <tr>
        		<td valign="top" class="bodyText">
-	       			Analysis Page<br>
+	       			<b><h3>Cluster Formation:</h3></b>
 	  <% 
-	    File mainFolder = new File("E:\\Eclipse-Indigo-Workspace\\ClusteringWebTwo\\WebClustering\\resources\\clustered");
+	    File mainFolder = new File("resources\\clustered");
 		out.println("<ul>");
         for (File main : mainFolder.listFiles()) 
         { 
-        	out.print("<li>"+main.getName()+"</li>");
-        		File subFolder = new File("E:\\Eclipse-Indigo-Workspace\\ClusteringWebTwo\\WebClustering\\resources\\clustered\\"+main.getName());
-        		
+        		out.print("<li><h3>"+main.getName()+"</h3></li>");
+        		File subFolder = new File("resources\\clustered\\"+main.getName());
+        		int counter=1;
         		for (File sub : subFolder.listFiles()) 
         		{
-        			out.println("<br>"+sub.getName());
-        		
+        			out.print("<h4>"+counter+":"+sub.getName()+"&nbsp&nbsp</h4>");
+        			counter++;
         		}
-        		
         }
-      %>	
+      	
+      %>
+<h3> Select Feature and Cluster to View Bar Graph: </h3>    
+ <form action ="viewBarGraph.jsp" method ="post">
+      <table>
+      <tr>
+     	 	<td>
+     	 		      <h4><b>Select Feature:</b></h4>      
+ 						<select id ="selectfeature" name="selectfeature">
+ 						<%  
+ 						Map<String,String> hm = new HashMap<String,String>();
+ 						hm.put("0", "UniGram");
+ 						hm.put("1", "BiGram");
+ 						hm.put("2", "TriGram");
+ 						hm.put("3", "#Sentence");
+ 						hm.put("4", "POS");
+ 						hm.put("5", "Punctuation");
+ 						hm.put("6", "Capitalization");
+ 						hm.put("7", "Named Entity");
+ 						hm.put("8", "Positive Negative Words");
+ 						hm.put("9", "Urls");
+ 						hm.put("10", "other3");
+ 						
+ 						String[] feature = (String[])session.getAttribute("feature");
+
+ 						for(String selected_features:feature)
+ 						{
+ 							out.print("<option value='"+selected_features+"'>"+hm.get(selected_features)+"</option>");
+ 						}
+ 						out.print("</ul>");
+ 						
+ 						
+
+ 						%>
+						</select>						
+      		</td>
+      		
+     	 	<td>
+     	 		      <h4><b>Select Cluster:</b></h4>       
+ 						<select id="selectcluster" name="selectcluster">
+ 						<% 
+ 				        for (File main : mainFolder.listFiles()) 
+ 				        {    	
+ 				        		out.print("<option value='"+main.getName()+"'>"+main.getName()+"</option>");
+ 				        }
+ 						%>
+						</select>
+						
+      		</td>
+           
+      </tr>
+      <tr>
+      
+      </tr>    	
+</table>
+<input type="submit" value="submit"/>
+</form>
+
+
+
+<h3>Select Cluster to View Word Cloud:</h3>     
+ <form action ="ViewWordCloud.jsp" method ="post">
+ <table>
+ <tr>
+ 	 	<td>
+     	 		      <h3><b>Select Cluster:</b></h3>       
+ 						<select id="selectcluster" name="selectcluster">
+ 						<% 
+ 				        for (File main : mainFolder.listFiles()) 
+ 				        {    	
+ 				        		out.print("<option value='"+main.getName()+"'>"+main.getName()+"</option>");
+ 				        }
+ 						%>
+						</select> 	 	
+ 	 	
+   	 	</td>
+</tr>
+</table>
+<input type="submit" value="submit"/>
+</form>
+      
 			</td>
         </tr>
-
+        
       </table>	  </td>
 	  <td>&nbsp;</td>
   </tr>

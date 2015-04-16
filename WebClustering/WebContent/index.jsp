@@ -55,7 +55,7 @@
 	        Upload Files<br>
 				<form action="sampleUploading.jsp" method="post" enctype="multipart/form-data">
   					<input name="file" type="file" multiple><br>
-  					<input type="submit">
+  					<input type="submit" value="upload">
 				</form>
 			</td>
         </tr>

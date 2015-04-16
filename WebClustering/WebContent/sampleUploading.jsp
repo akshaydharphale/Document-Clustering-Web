@@ -1,3 +1,5 @@
+<%@page import="com.extraction.MainFile"%>
+<%@page import="org.apache.james.mime4j.dom.address.Mailbox"%>
 <%@ page import="java.io.*,java.util.*, javax.servlet.*" %>
 <%@ page import="javax.servlet.http.*" %>
 <%@ page import="org.apache.commons.fileupload.*" %>
@@ -6,9 +8,25 @@
 <%@ page import="org.apache.commons.io.output.*" %>
 
 <%
-   File file ;
-   int maxFileSize = 5000 * 1024;
-   int maxMemSize = 5000 * 1024;
+
+
+
+	File file=new File("resources\\raw_data");
+
+		if (file.exists())
+		{
+			MainFile mfObj = new MainFile();
+			mfObj.recursiveDelete(file);
+			
+		}
+		file.mkdirs();
+		
+	
+
+
+
+   int maxFileSize = 5000 * 102400;
+   int maxMemSize = 5000 * 102400;
    ServletContext context = pageContext.getServletContext();
    String filePath = context.getInitParameter("file-upload");
 

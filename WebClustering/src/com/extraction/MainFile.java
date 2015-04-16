@@ -1,3 +1,7 @@
+/*
+ * This package mainly contains core java files which extract the features from different documents and
+ * classify based on those feature values
+ * */
 package com.extraction;
 
 import java.io.BufferedWriter;
@@ -23,6 +27,9 @@ import org.apache.uima.util.FileUtils;
 
 
 
+
+
+
 import com.features.*;
 import com.visualization.*;
 
@@ -33,54 +40,71 @@ import weka.core.converters.ConverterUtils.DataSource;
 
 public class MainFile {
 
-	public static TreeMap<String, Integer> uniqUnigrams;
-	public static HashMap<String, DocInfo> docUnigrams;
-	public static TreeMap<String, Integer> uniqBigrams;
-	public static HashMap<String, DocInfo> docBigrams;
-	public static TreeMap<String, Integer> uniqTrigrams;
-	public static HashMap<String, DocInfo> docTrigrams;
-	public static TreeMap<String, Integer> uniqCapitals;
-	public static HashMap<String, DocInfo> docCapitals;
-	public static TreeSet<String> uniqPunct;
-	public static HashMap<String, DocInfo> docPunct;
-	public static TreeSet<String> uniqPOS;
-	public static HashMap<String, DocInfo> docPOS;
-	public static HashMap<String, Integer> docSentences;
-	public static String currentDoc;
-	public static ArrayList<Integer> featureChoice;
-	public static Integer totalFeatures=0;
-	public static PorterStemmer myStem;
-	public static String currFilename;
-	public static ArrayList<ArrayList<Integer>> cluster;
-	int diffrentFeatures=7;
-	File inputDir,file,outputDir,tempDir;		
-	File[] files;
-	BufferedWriter bw; 
-	String st;
-	DocInfo doc;	
-	static Integer totalDocs=0;
-	Unigram objUnigram;
-	Bigram objBigram;
-	Trigram objTrigram;
-	Capital objCapital;
-	Sentence objSentence;
-	Punctuation objPunctuation;
-	POS objPOS;
-	int i;
-	StringBuilder sb;	
-	String destFolder,dataset,raw_data,processed,feature_data;
+	//All objects to store data temporary to extract features from documents 
+		//The object starting with 'uniq', maintains state of features across document corpus (this is applicable for each below objects)
+		//The object starting with 'doc', maintains state of features for each particular document (this is applicable for each below objects)
+		public static TreeMap<String, Integer> uniqUnigrams;  
+		public static HashMap<String, DocInfo> docUnigrams;   
+		public static TreeMap<String, Integer> uniqBigrams;	
+		public static HashMap<String, DocInfo> docBigrams;
+		public static TreeMap<String, Integer> uniqTrigrams;
+		public static HashMap<String, DocInfo> docTrigrams;
+		public static TreeMap<String, Integer> uniqCapitals;
+		public static HashMap<String, DocInfo> docCapitals;
+		public static TreeSet<String> uniqPunct;
+		public static HashMap<String, DocInfo> docPunct;
+		public static TreeSet<String> uniqPOS;		//Around 45 POS tags
+		public static HashMap<String, DocInfo> docPOS; 
+		public static HashMap<String, Integer> docSentences;
+		public static TreeSet<String> uniqNE;		//Named Entity Labels: PERSON, ORGANIZATION, LOCATION
+		public static HashMap<String, DocInfo> docNE;
+		public static HashMap<String, Pair> docPositiveNegative;
+		public static TreeMap<String, Integer> uniqURLs;
+		public static HashMap<String, DocInfo> docURLs;
+		public static String currentDoc;		//Text of current document under process of feature extraction
+		public static ArrayList<Integer> featureChoice;	//contains choice of features to cluster given document corpus
+		public static Integer totalFeatures=0;	//Specifies total features based on which clustering will be done
+		public static PorterStemmer myStem;
+		public static String currFilename;		//Name of current document under process of feature extraction
+		public static ArrayList<ArrayList<Integer>> cluster;	//contains info of each cluster like which documents are in which clusters
+		public static int no_cluster;		//Specifies no of clusters for document clustering
+		public static Integer totalDocs=0;  //Specifies total documents in given corpus
+		int diffrentFeatures=10;			//Specifies different type of features like unigrams,bigrams etc.
+		File inputDir,file,outputDir,tempDir;		
+		File[] files;		//file pointers of each documents in corpus
+		BufferedWriter bw; 
+		String st;
+		DocInfo doc;	
+		Unigram objUnigram;
+		Bigram objBigram;
+		Trigram objTrigram;
+		Capital objCapital;
+		Sentence objSentence;
+		Punctuation objPunctuation;
+		POS objPOS;
+		NameEntityRecognizer objNE;
+		PositiveNegative objPN;
+		URL objURL;
+		int i;
+		StringBuilder sb;	
+		String destFolder,dataset,raw_data,processed,descriptor,tagger,neTrained;
+		public static String tempCluster,feature_data;
+		
 
-
-	public void myMain(int noOfClusters) throws IOException 
+		/*
+		 * Main function from where execution of program will start.
+		 */
+	public void myMain(int noOfClusters, String[] feature) throws IOException 
 	{
 		
 		long lStartTime = new Date().getTime();
 		MainFile obj;
 		obj=new MainFile();
+		no_cluster=noOfClusters;
 	//	System.out.println("1:"+noOfClusters);
-		File f=new File(".");
-		//System.out.println("1. "+f.getAbsolutePath());
-		//System.out.println("2. "+ f.getCanonicalPath());
+	//	File f=new File(".");
+	//System.out.println("1. "+f.getAbsolutePath());
+	//System.out.println("2. "+ f.getCanonicalPath());
 		
 	//	BufferedWriter bwObj = new BufferedWriter(new FileWriter("akshay123.txt"));
 	//	bwObj.write("hello");
@@ -89,21 +113,70 @@ public class MainFile {
 		
 		
 		obj.check();
-		obj.init();
+		obj.init(feature);
 		obj.process(noOfClusters);
 		long lEndTime = new Date().getTime();
 		long difference = lEndTime - lStartTime;
-		System.out.println("Elapsed milliseconds: " + difference);
+		System.out.println("Elapsed milliseconds: " + difference);	//Measures total execution time of project
 	}
+	
+	/*
+	 * This function initializes every objects and also gives choice of features for document clustering
+	 */
+	public void init(String[] feature)
+	{
+		uniqUnigrams=new TreeMap<String, Integer>();
+		docUnigrams=new HashMap<String, DocInfo>();
+		uniqBigrams=new TreeMap<String, Integer>();
+		docBigrams=new HashMap<String, DocInfo>();
+		uniqTrigrams=new TreeMap<String, Integer>();
+		docTrigrams=new HashMap<String, DocInfo>();
+		uniqCapitals=new TreeMap<String, Integer>();
+		docCapitals=new HashMap<String, DocInfo>();
+		uniqPOS=new TreeSet<String>();
+		docPOS=new HashMap<String, DocInfo>();
+		uniqPunct=new TreeSet<String>();
+		docPunct=new HashMap<String, DocInfo>();
+		docSentences=new HashMap<String, Integer>();
+		docPositiveNegative=new HashMap<String, Pair>();
+		uniqURLs=new TreeMap<String, Integer>();
+		docURLs=new HashMap<String, DocInfo>();
+		myStem=new PorterStemmer();
+		uniqNE=new TreeSet<String>();
+		docNE=new HashMap<String, DocInfo>();
+		featureChoice=new ArrayList<Integer>(diffrentFeatures);	//user can enter their choice of features and it is specified in this object
 
+		//featureChoice.add(5);
+		//featureChoice.add(4);
+		//featureChoice.add(2);
+		
+		
+		
+		int selected_features;
+		for(String s:feature)
+		{
+			selected_features = Integer.parseInt(s);
+			featureChoice.add(selected_features);
+		}
+		
+		
+		//featureChoice.add(1);
+		//akshay check
+	
+	}
+	
+	/*
+	 * This function iterates through each document, extracts features and stores in different objects.
+	 */
 	public void process(int noOfClusters)
 	{
 		try{
 			String[] para = new String[2];
 			totalDocs=files.length;
 
-			// process each document
+			// process each document one by one and extract each specified feature from documents
 			for (i = 0; i < files.length; i++) {
+				//Text file for each documents which does not contains multimedia information
 				st=outputDir.getPath()+File.separator+files[i].getName().replaceFirst("[.][^.]+$", "")+".txt";
 				file = new File(files[i].getPath());				//input file name
 				bw = new BufferedWriter(new FileWriter(st));		//output file name
@@ -113,58 +186,62 @@ public class MainFile {
 				// read contents of file
 				currentDoc = FileUtils.file2String(new File(st));
 				para[1]=st;
+				//iterates and extract all specified features from document
 				for(int c=0;c<featureChoice.size();c++)
 				{
 					switch(featureChoice.get(c)){
-						case 0: docUnigrams.put(currFilename,new DocInfo());
+						case 0: docUnigrams.put(currFilename,new DocInfo());	//Unigrams
 								objUnigram=new Unigram();
-								para[0]="descriptor"+File.separator+"Unigram.xml"; 	//Name of descriptor
+								para[0]=descriptor+File.separator+"Unigram.xml"; //Name of descriptor file(in xml format)
 								objUnigram.analyze(para);
 								break;
-						case 1: docBigrams.put(currFilename,new DocInfo());
+						case 1: docBigrams.put(currFilename,new DocInfo());		//Bigrams
 								objBigram=new Bigram();
-								para[0]="descriptor"+File.separator+"Bigram.xml";
+								para[0]=descriptor+File.separator+"Bigram.xml";
 								objBigram.analyze(para);
 								break;
-						case 2: docTrigrams.put(currFilename,new DocInfo());
+						case 2: docTrigrams.put(currFilename,new DocInfo());	//Trigrams
 								objTrigram=new Trigram();
-								para[0]="descriptor"+File.separator+"Trigram.xml";
+								para[0]=descriptor+File.separator+"Trigram.xml";
 								objTrigram.analyze(para);
 								break;
-						case 3: docSentences.put(currFilename, 0);
+						case 3: docSentences.put(currFilename, 0);		//no of sentences
 								objSentence=new Sentence();
-								para[0]="descriptor"+File.separator+"Sentence.xml";
+								para[0]=descriptor+File.separator+"Sentence.xml";
 								objSentence.analyze(para);
 								break;
-						case 4: docPOS.put(currFilename, new DocInfo());
+						case 4: docPOS.put(currFilename, new DocInfo());	//POS Tag
 								objPOS=new POS();
-								para[0]="tagger"+File.separator+"english-left3words-distsim.tagger";
+								para[0]=tagger+File.separator+"english-left3words-distsim.tagger";	//model file for POS tagging
 								objPOS.analyze(para);
 								break;
-						case 5: docPunct.put(currFilename,new DocInfo());
+						case 5: docPunct.put(currFilename,new DocInfo());	//No of Punctuation
 								objPunctuation=new Punctuation();
-								para[0]="descriptor"+File.separator+"Punctuation.xml"; 
+								para[0]=descriptor+File.separator+"Punctuation.xml"; 
 								objPunctuation.analyze(para);
 								break;
-						case 6: docCapitals.put(currFilename,new DocInfo());
+						case 6: docCapitals.put(currFilename,new DocInfo());	//Capital words
 								objCapital=new Capital();
-								para[0]="descriptor"+File.separator+"Unigram.xml"; 
+								para[0]=descriptor+File.separator+"Unigram.xml"; 
 								objCapital.analyze(para);
+								break;
+						case 7: docNE.put(currFilename, new DocInfo());		//Named Entity
+								objNE=new NameEntityRecognizer();
+								para[0]=neTrained+File.separator+"english.all.3class.distsim.crf.ser.gz";	//model file for named entity
+								objNE.analyze(para);
+								break;
+						case 8: docPositiveNegative.put(currFilename, new Pair());	//Positive and Negative words
+								objPN=new PositiveNegative();
+								para[0]=descriptor+File.separator+"Unigram.xml";
+								objPN.analyze(para);
+								break;
+						case 9: docURLs.put(currFilename,new DocInfo());	//URLs
+								objURL=new URL();
+								para[0]=descriptor+File.separator+"URL.xml"; 
+								objURL.analyze(para);
 								break;
 					}
 				}
-
-				/*doc=docUnigrams.get(currFilename);
-				if(doc.totalWords==0)
-					docUnigrams.remove(currFilename);
-				doc=docWords.get(currFilename);
-				if(doc.totalWords==0)
-					docWords.remove(currFilename);
-				doc=docPOS.get(currFilename);
-				if(doc.totalWords==0)
-					docPOS.remove(currFilename);*/
-
-				//objAnnotation.analyze(para);
 
 				/*for(Map.Entry<String,Integer> entry : MainFile.uniqUnigrams.entrySet()) {
 					  String key = entry.getKey();
@@ -185,21 +262,24 @@ public class MainFile {
 			}
 			if(featureChoice.contains(3))
 				totalFeatures=totalFeatures+1;
+			if(featureChoice.contains(8))
+			{
+				totalFeatures=totalFeatures+2;
+				objPN.deleteData();
+			}
 			if(totalFeatures!=0)
 			{
 				datasetCreation();
 				clusterData(noOfClusters);
-				String[] args=new String[3];
 				//akshay check
+				//make dropdown of selected feature on analysis.jsp and pass the selected feature among them
 				//Pass The Selected Feature
-				args[0]="1";	//Feature selection
-				args[1]="0";	//Cluster selection
-				args[2]=feature_data;	//location of features files
-				BarGraph app = new BarGraph();
-				app.caller(args);
+			
+				
 			}
 			else
 			{
+				//Zero extracted features from given dataset
 				System.out.println("Not a proper dataset");
 				System.out.println("Program terminated");
 				System.exit(0);
@@ -211,36 +291,127 @@ public class MainFile {
 		}
 	}
 
+	
+	public void drawBarGraph(String feature,String cluster)
+	{
+		String[] args=new String[3];
+		args[0]=feature;	//Feature selection to draw bar chart
+		args[1]=cluster;	//Cluster selection to draw bar chart
+		args[2]=feature_data;	//location of features files
+		BarGraph app = new BarGraph();
+		app.caller(args);	//draws bar chart according to given arguments and stored in 'chart.png' file in current project folder
+	}
+	
+	public void drawWordCloud(String cluster)
+	{
+		
+		String[] argsOne=new String[2];
+		argsOne[0]=cluster;	//Cluster selection
+		argsOne[1]=tempCluster;	//location of clustered text files
+		//System.out.println("2."+cluster);
+		//System.out.println("3:"+tempCluster);
+	    WordCloud wc=new WordCloud();	
+		wc.draw(argsOne);	//draws word cloud based on given arguments and stored in wordcloud_<cluster_no>.png file in current project folder
+		
+	}
+	
+	/*
+	 * This function converts heterogeneous documents into pure text documents. 
+	 * This function uses Apache Tika to do this. 
+	 */
+	public void processRawData()
+	{
+		Tika obj=new Tika();
+		Reader r;
+		Boolean fg=true;	//specify previous character is not space
+		char dataChar;
+		int data;
+		try {
+			//Pre-processing before converting into text file like removing extra spaces from document
+			//Now document is only "bag of related words"
+			r=obj.parse(file);
+			data = r.read();
+			while(data!=-1 && (data==' ' || data=='\t' || data=='\n' || data=='-'))
+			{
+				data = r.read();
+			}
+			while(data != -1){
+				dataChar = (char) data;
+
+				if(fg && dataChar=='-')
+				{
+					while(data != -1 && (dataChar=='-' || dataChar=='\n'))
+					{
+						data = r.read();
+						dataChar = (char) data;
+					}
+				}
+				if(dataChar==' ' || dataChar=='\t' || dataChar=='\n')
+				{
+					if(fg)
+						bw.write(dataChar);
+					fg=false;
+				}
+				else
+				{
+					bw.write(dataChar);
+					fg=true;
+				}
+				data = r.read();				
+			}
+			bw.write(" ");
+			r.close();
+			//String st=obj.parseToString(file);
+			//String filetype=obj.detect(file);
+			//System.out.println(st);
+			//System.out.println("================================");
+			//System.out.println(filetype);
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	/*
+	 * This function clusters data based on different feature values of documents and stores documents in different cluster folder
+	 * KMeans algorithm of Weka inbuilt library is used for clustering. 
+	 */
 	public void clusterData(int noOfClusters)
 	{
-		DataSource source;
-	
 		try {
-			source = new DataSource(dataset);
+			File tfile;
+		//	int seedVal=2*noOfClusters;
+			DataSource source = new DataSource(dataset);	//data file("data.arff") in weka specified format 
 			cluster=new ArrayList<ArrayList<Integer>>(noOfClusters);
 			for(i=0;i<noOfClusters;i++)
 				cluster.add(new ArrayList<Integer>());
 			Instances data = source.getDataSet();
 			SimpleKMeans model = new SimpleKMeans();
 			model.setNumClusters(noOfClusters);
+		//	model.setSeed(seedVal);
 			
 			model.buildClusterer(data);
 			file=new File(destFolder);
+			tfile=new File(tempCluster);
 			if (file.exists()) 
 				//delete older files recursively
 				recursiveDelete(file);
-
-			if (!(file.mkdir())) 
+			if (tfile.exists()) 
+				recursiveDelete(tfile);
+			
+			if (!(file.mkdir()) || !(tfile.mkdir())) 
 			{
-				System.out.println("Failed to create cluster directory???!");
+				System.out.println("Failed to create cluster directory!!!");
 				System.exit(0);
 			}
 
-			int i=0;
+			//Separates files in different cluster based on result generated by KMeans algo.
 			for(i=0;i<noOfClusters;i++)
 			{
 				file=new File(destFolder+File.separator+i);
-				if(!(file.mkdir()))
+				tfile=new File(tempCluster+File.separator+i);
+				if (!(file.mkdir()) || !(tfile.mkdir())) 
 				{
 					System.out.println("Failed to create cluster directory!");
 					System.exit(0);
@@ -252,7 +423,8 @@ public class MainFile {
 			for (Instance instance : data) {
 				no=model.clusterInstance(instance);
 								
-				Files.copy(new File(processed+File.separator+files[i].getName().replaceFirst("[.][^.]+$", "")+".txt").toPath(),(new File(destFolder+"/"+no+"/"+files[i].getName().replaceFirst("[.][^.]+$", "")+".txt")).toPath(), StandardCopyOption.REPLACE_EXISTING);
+				Files.copy(new File(raw_data+File.separator+files[i].getName()).toPath(),(new File(destFolder+"/"+no+"/"+files[i].getName())).toPath(), StandardCopyOption.REPLACE_EXISTING);
+				Files.copy(new File(processed+File.separator+files[i].getName().replaceFirst("[.][^.]+$", "")+".txt").toPath(),(new File(tempCluster+"/"+no+"/"+files[i].getName().replaceFirst("[.][^.]+$", "")+".txt")).toPath(), StandardCopyOption.REPLACE_EXISTING);
 				//System.out.println(processed+"/"+files[i].getName().replaceFirst("[.][^.]+$", "")+".txt"+"-->"+no);
 				cluster.get(no).add(i);
 				i++;
@@ -266,6 +438,10 @@ public class MainFile {
 		}
 	}
 
+	/*
+	 * This function creates weka specific data file("data.arff") for clustering data
+	 * Calculates feature values based on objects created in process() function like tf-idf,frequency etc.
+	 */
 	public void datasetCreation()
 	{		
 		try {
@@ -287,6 +463,8 @@ public class MainFile {
 				bw_idf.add(null);
 			}
 			
+			//iterates through each features and specifies attribute for each different features
+			//stores each feature in separate temporary files
 			for(c=0;c<featureChoice.size();c++)
 			{
 				switch(featureChoice.get(c)){
@@ -368,15 +546,47 @@ public class MainFile {
 							bw_tf.set(c,new BufferedWriter(new FileWriter(feature_data+File.separator+"capital_tf.txt",true)));
 							bw_idf.set(c,new BufferedWriter(new FileWriter(feature_data+File.separator+"capital_tf_idf.txt",true)));
 							break;
+					case 7: tpbw=new BufferedWriter(new FileWriter(feature_data+File.separator+"NE.txt"));
+							i=0;
+							iterator = uniqNE.iterator();
+							while (iterator.hasNext()){
+								key = iterator.next();
+								bw.write("@attribute NE"+i+" numeric\n");
+								tpbw.write(key+"\n");
+								i++;								
+							}
+							tpbw.close();
+							bw_tf.set(c,new BufferedWriter(new FileWriter(feature_data+File.separator+"NE_tf.txt",true)));
+							break;
+					case 8: tpbw=new BufferedWriter(new FileWriter(feature_data+File.separator+"PN.txt"));
+							bw.write("@attribute positive_words numeric\n");
+							bw.write("@attribute negative_words numeric\n");
+							tpbw.write("Total Positive words\nTotal Negative words\n");
+							tpbw.close();
+							bw_tf.set(c,new BufferedWriter(new FileWriter(feature_data+File.separator+"PN_tf.txt",true)));
+							break;
+					case 9: tpbw=new BufferedWriter(new FileWriter(feature_data+File.separator+"urls.txt"));
+							i=0;
+							for(Map.Entry<String,Integer> entry : uniqURLs.entrySet()) {
+								key = entry.getKey();
+								bw.write("@attribute url"+i+" numeric\n");
+								tpbw.write(key+"\n");
+								i++;								
+							}
+							tpbw.close();
+							bw_tf.set(c,new BufferedWriter(new FileWriter(feature_data+File.separator+"url_tf.txt",true)));
+							bw_idf.set(c,new BufferedWriter(new FileWriter(feature_data+File.separator+"url_tf_idf.txt",true)));
+							break;
 				}					
 			}
 			bw.write("\n@data\n");
 
 			sb=new StringBuilder(1000);
+			//iterates through every docs and writes features values in vector like format in one line for each document
 			for (i = 0; i < files.length; i++) {
 				sb.setLength(0);
 				st=files[i].getName();
-							
+				//iterates through every specified features and write values of features in comma separated values				
 				for(c=0;c<featureChoice.size();c++){
 					switch(featureChoice.get(c)){
 						case 0: doc=docUnigrams.get(st);
@@ -386,7 +596,7 @@ public class MainFile {
 									tf=doc.wordCount.get(key);
 									if(tf!=null)
 									{
-										idf=Math.log10(totalDocs*1.0/value);
+										idf=Math.log10(totalDocs*1.0/value);	//Calculation of tf-idf score
 										tf_idf=tf*idf;
 										sb.append(tf_idf+",");
 										bw_idf.get(c).write(tf_idf+",");
@@ -409,7 +619,7 @@ public class MainFile {
 									tf=doc.wordCount.get(key);
 									if(tf!=null)
 									{
-										idf=Math.log10(totalDocs*1.0/value);
+										idf=Math.log10(totalDocs*1.0/value);	//Calculation of tf-idf score
 										tf_idf=tf*idf;
 										sb.append(tf_idf+",");
 										bw_idf.get(c).write(tf_idf+",");
@@ -432,7 +642,7 @@ public class MainFile {
 									tf=doc.wordCount.get(key);
 									if(tf!=null)
 									{
-										idf=Math.log10(totalDocs*1.0/value);
+										idf=Math.log10(totalDocs*1.0/value);	//Calculation of tf-idf score
 										tf_idf=tf*idf;
 										sb.append(tf_idf+",");
 										bw_idf.get(c).write(tf_idf+",");
@@ -457,7 +667,7 @@ public class MainFile {
 									tf=doc.wordCount.get(iterator.next());
 									if(tf!=null)
 									{
-										tf_idf= (double)tf/doc.totalWords;
+										tf_idf= (double)tf/doc.totalWords;	//Relatively calculates no of POS Tags
 										sb.append(tf_idf+",");
 										bw_tf.get(c).write(tf_idf+" ");
 									}
@@ -475,7 +685,7 @@ public class MainFile {
 									tf=doc.wordCount.get(iterator.next());
 									if(tf!=null)
 									{
-										tf_idf= (double)tf/doc.totalWords;
+										tf_idf= (double)tf/doc.totalWords;	//Relatively calculates no of Punctuations
 										sb.append(tf_idf+",");
 										bw_tf.get(c).write(tf_idf+" ");
 									}
@@ -494,7 +704,51 @@ public class MainFile {
 									tf=doc.wordCount.get(key);
 									if(tf!=null)
 									{
-										idf=Math.log10(totalDocs*1.0/value);
+										idf=Math.log10(totalDocs*1.0/value);	//Calculation of tf-idf score
+										tf_idf=tf*idf;
+										sb.append(tf_idf+",");
+										bw_idf.get(c).write(tf_idf+",");
+										bw_tf.get(c).write(tf+",");
+									}
+									else
+									{
+										sb.append("0,");
+										bw_idf.get(c).write("0,");
+										bw_tf.get(c).write("0,");
+									}
+								}
+								bw_idf.get(c).write("\n");
+								bw_tf.get(c).write("\n");
+								break;
+						case 7: doc=docNE.get(st);
+								iterator = uniqNE.iterator();
+								while (iterator.hasNext()){
+									tf=doc.wordCount.get(iterator.next());
+									if(tf!=null)
+									{
+										tf_idf= (double)tf/doc.totalWords;	//Relatively calculates no of Named entities: Person,Organization or Location
+										sb.append(tf_idf+",");
+										bw_tf.get(c).write(tf_idf+",");
+									}
+									else
+									{
+										sb.append("0,");
+										bw_tf.get(c).write("0,");
+									}
+								}
+								bw_tf.get(c).write("\n");
+								break;
+						case 8: sb.append(docPositiveNegative.get(st).getX()+","+docPositiveNegative.get(st).getY()+",");
+								bw_tf.get(c).write(docPositiveNegative.get(st).getX()+","+docPositiveNegative.get(st).getY()+"\n");
+								break;
+						case 9: doc=docURLs.get(st);
+								for(Map.Entry<String,Integer> entry : MainFile.uniqURLs.entrySet()) {
+									key = entry.getKey();
+									value = entry.getValue();
+									tf=doc.wordCount.get(key);
+									if(tf!=null)
+									{
+										idf=Math.log10(totalDocs*1.0/value);	//Calculation of tf-idf score
 										tf_idf=tf*idf;
 										sb.append(tf_idf+",");
 										bw_idf.get(c).write(tf_idf+",");
@@ -515,6 +769,8 @@ public class MainFile {
 				sb.setCharAt(sb.length()-1,'\n');
 				bw.write(sb.toString());
 			}
+			//clear all static objects because now we have all info in file format 
+			//so need to store unnecessary objects in main memory
 			uniqUnigrams.clear();
 			docUnigrams.clear();
 			uniqBigrams.clear();
@@ -524,6 +780,13 @@ public class MainFile {
 			docSentences.clear();
 			uniqPOS.clear();
 			docPOS.clear();
+			uniqCapitals.clear();
+			uniqPunct.clear();
+			docCapitals.clear();
+			docPunct.clear();
+			uniqNE.clear();
+			docNE.clear();
+			docPositiveNegative.clear();
 			bw.close();
 			for(i=0;i<diffrentFeatures;i++)
 			{
@@ -538,114 +801,33 @@ public class MainFile {
 		}
 	}
 
-	public void processRawData()
-	{
-		Tika obj=new Tika();
-		Reader r;
-		Boolean fg=true;	//specify previous character is not space
-		char dataChar;
-		int data;
-		try {
-			r=obj.parse(file);
-			data = r.read();
-			while(data!=-1 && (data==' ' || data=='\t' || data=='\n' || data=='-'))
-			{
-				data = r.read();
-			}
-			while(data != -1){
-				dataChar = (char) data;
-
-				if(fg && dataChar=='-')
-				{
-					while(data != -1 && (dataChar=='-' || dataChar=='\n'))
-					{
-						data = r.read();
-						dataChar = (char) data;
-					}
-				}
-				if(dataChar==' ' || dataChar=='\t' || dataChar=='\n')
-				{
-					if(fg)
-						bw.write(dataChar);
-					fg=false;
-				}
-				else
-				{
-					bw.write(dataChar);
-					fg=true;
-				}
-				data = r.read();				
-			}
-			bw.write(" ");
-			r.close();
-			//String st=obj.parseToString(file);
-			//String filetype=obj.detect(file);
-			//System.out.println(st);
-			//System.out.println("================================");
-			//System.out.println(filetype);
-
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	public void init()
-	{
-		uniqUnigrams=new TreeMap<String, Integer>();
-		docUnigrams=new HashMap<String, DocInfo>();
-		uniqBigrams=new TreeMap<String, Integer>();
-		docBigrams=new HashMap<String, DocInfo>();
-		uniqTrigrams=new TreeMap<String, Integer>();
-		docTrigrams=new HashMap<String, DocInfo>();
-		uniqCapitals=new TreeMap<String, Integer>();
-		docCapitals=new HashMap<String, DocInfo>();
-		uniqPOS=new TreeSet<String>();
-		docPOS=new HashMap<String, DocInfo>();
-		uniqPunct=new TreeSet<String>();
-		docPunct=new HashMap<String, DocInfo>();
-		docSentences=new HashMap<String, Integer>();
-		myStem=new PorterStemmer();
-		featureChoice=new ArrayList<Integer>(diffrentFeatures);
-
-		//featureChoice.add(5);
-		//featureChoice.add(4);
-		//featureChoice.add(2);
-		featureChoice.add(1);
-		//akshay check
-	
-	}
-
+	/*
+	 * This functions check for structure of input document corpus.
+	 * Dataset must be in folder "resources/raw_data".
+	 * If folder format is not in proper format than application will terminate with message.
+	 * It also creates extra temporary folder for application to store temp data.
+	 */
 	void check()
 	{
 		
-		/*destFolder="resources"+File.separator+"clustered";
+		destFolder="resources"+File.separator+"clustered";
 		dataset="resources"+File.separator+"data.arff";	
 		raw_data="resources"+File.separator+"raw_data";
 		processed="resources"+File.separator+"data";
-		feature_data="resources"+File.separator+"temp";*/
-		
-		
-		destFolder="."+File.separator+"resources"+File.separator+"clustered";
-		dataset="."+File.separator+"resources"+File.separator+"data.arff";	
-		raw_data="."+File.separator+"resources"+File.separator+"raw_data";
-		processed="."+File.separator+"resources"+File.separator+"data";
-		feature_data="."+File.separator+"resources"+File.separator+"temp";
-		
-		/*destFolder="clustered";
-		dataset="data.arff";	
-		raw_data="raw_data";
-		processed="data";
-		feature_data="temp";*/
+		feature_data="resources"+File.separator+"temp";
+		tempCluster="resources"+File.separator+"temp"+File.separator+"clustered";
+		descriptor="descriptor";
+		tagger="tagger";
+		neTrained="classifiers";
 		
 		inputDir=new File(raw_data);
-		/*if(!inputDir.exists() || !inputDir.isDirectory())
+		if(!inputDir.exists() || !inputDir.isDirectory())
 		{
-			System.out.println(File.separator+"It seems input files are not present or input data structure is not in appropriate format");
+			System.out.println("It seems input files are not present or input data structure is not in appropriate format");
 			System.out.println("Create directory structure in current project folder \"resources/raw_data\" and put all input documents int that folder.");
 			System.out.println("Program terminated");
 			System.exit(0);
-		}*/
+		}
 		// get all files in the input directory
 		files = inputDir.listFiles();
 		if(files==null)
@@ -718,9 +900,20 @@ public class MainFile {
 			System.out.println("Failed to create directory");
 			System.out.println("Program terminated");
 			System.exit(0);
-		}			
+		}		
+		tempDir=new File(tempCluster);
+		status = tempDir.mkdirs();
+		if(!status)
+		{
+			System.out.println("Failed to create directory");
+			System.out.println("Program terminated");
+			System.exit(0);
+		}		
 	}
 
+	/*
+	 * Recursively delete all files and folder in given path 
+	 */
 	public boolean recursiveDelete(File file) {
 		//to end the recursive loop
 		if (!file.exists())

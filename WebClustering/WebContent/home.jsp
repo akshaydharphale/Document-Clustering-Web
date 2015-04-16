@@ -54,9 +54,16 @@
        		<td valign="top" class="bodyText">
        		
 			  <form action="WelcomeServlet" method="post">
-		  		    <input type="checkbox" name="feature" value="0">Unigram<br>
-				    <input type="checkbox" name="feature" value="1">Bigram <br>
-				    <input type="checkbox" name="feature" value="2">Trigram <br>
+		  		    <input type="checkbox" name="feature" value="0">UniGram<br>
+				    <input type="checkbox" name="feature" value="1">BiGram <br>
+				    <input type="checkbox" name="feature" value="2">TriGram <br>
+				    <input type="checkbox" name="feature" value="3">#Sentence <br>
+				    <input type="checkbox" name="feature" value="4">POS <br>
+				    <input type="checkbox" name="feature" value="5">Punctuation <br>
+				    <input type="checkbox" name="feature" value="6">Capitalization <br>
+				    <input type="checkbox" name="feature" value="7">Named Entity <br>
+				    <input type="checkbox" name="feature" value="8">Positive Negative Words<br>
+				    <input type="checkbox" name="feature" value="9">URLS<br>
 Number of Clusters	<input type="text" name="noc" id ="noc"><br><br>
         		    <input type="submit" value="submit"/>
 	          </form>

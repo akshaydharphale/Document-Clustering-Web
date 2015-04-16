@@ -9,6 +9,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import com.extraction.MainFile;
 
@@ -38,27 +39,33 @@ public class WelcomeServlet extends HttpServlet {
 		out.print("</ul>");
 		
 		MainFile mfObj = new MainFile();
-		mfObj.myMain(clusters);
+		mfObj.myMain(clusters,feature);
 		
 		/*----------------------------------------------------------------------------------------------------------------*/
-		File mainFolder = new File("E:\\Luna-EE-Workspace New\\WebClustering\\resources\\clustered");
+		File mainFolder = new File("resources\\clustered");
 		out.println("<ul>");
         for (File main : mainFolder.listFiles()) 
         { 
         	out.print("<li>"+main.getName()+"</li>");
-        		File subFolder = new File("E:\\Luna-EE-Workspace New\\WebClustering\\resources\\clustered\\"+main.getName());
+        		File subFolder = new File("resources\\clustered\\"+main.getName());
         		
         		for (File sub : subFolder.listFiles()) 
         		{
         			out.println("<br>"+sub.getName());
-        		}
-        		
+        		}      		
         }
         
         
-        String site = new String("analysis.jsp");
-        response.setStatus(response.SC_MOVED_TEMPORARILY);
-        response.setHeader("Location", site);
+       // request.setAttribute("myfeatures", "hello");
+        //request.getRequestDispatcher("analysis.jsp").forward(request, response);
+        HttpSession session = request.getSession(true);
+        session.setAttribute("feature", feature );
+        response.sendRedirect("analysis.jsp?");
+        
+        
+        //String site = new String("analysis.jsp");
+       // response.setStatus(response.SC_MOVED_TEMPORARILY);
+       // response.setHeader("Location", site);
         
         
         out.print("</ul>"); 
