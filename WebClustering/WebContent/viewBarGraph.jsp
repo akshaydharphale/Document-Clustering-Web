@@ -24,8 +24,8 @@ MainFile mfObj = new MainFile();
 mfObj.drawBarGraph(feature,cluster);
 
 File f=new File("");
-String name=f.getAbsolutePath()+ "\\chart_" +feature+".png";
-System.out.println(name);
+String name=f.getAbsolutePath()+ File.separator +"chart_" +feature+".png";
+System.out.println("Verify This-!!!"+name);
 out.println("<h1>" + "BAR Graph Feature vs Cluster </h1>");
 out.print("<center><img src='"+name+"' alt='bar chart'  width='800' height='600' border='0' /></center>");
 %>

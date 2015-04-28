@@ -42,12 +42,12 @@ public class WelcomeServlet extends HttpServlet {
 		mfObj.myMain(clusters,feature);
 		
 		/*----------------------------------------------------------------------------------------------------------------*/
-		File mainFolder = new File("resources\\clustered");
+		File mainFolder = new File("resources"+ File.separator +"clustered");
 		out.println("<ul>");
         for (File main : mainFolder.listFiles()) 
         { 
         	out.print("<li>"+main.getName()+"</li>");
-        		File subFolder = new File("resources\\clustered\\"+main.getName());
+        		File subFolder = new File("resources"+ File.separator +"clustered"+ File.separator +""+main.getName());
         		
         		for (File sub : subFolder.listFiles()) 
         		{

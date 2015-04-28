@@ -58,12 +58,12 @@
        		<td valign="top" class="bodyText">
 	       			<b><h3>Cluster Formation:</h3></b>
 	  <% 
-	    File mainFolder = new File("resources\\clustered");
+	    File mainFolder = new File("resources"+ File.separator +"clustered");
 		out.println("<ul>");
         for (File main : mainFolder.listFiles()) 
         { 
         		out.print("<li><h3>"+main.getName()+"</h3></li>");
-        		File subFolder = new File("resources\\clustered\\"+main.getName());
+        		File subFolder = new File("resources"+ File.separator +"clustered"+ File.separator +""+main.getName());
         		int counter=1;
         		for (File sub : subFolder.listFiles()) 
         		{

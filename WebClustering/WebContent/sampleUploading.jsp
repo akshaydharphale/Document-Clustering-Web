@@ -11,7 +11,7 @@
 
 
 
-	File file=new File("resources\\raw_data");
+	File file=new File("resources"+ File.separator +"raw_data"+ File.separator +"");
 
 		if (file.exists())
 		{
@@ -38,7 +38,7 @@
       // maximum size that will be stored in memory
       factory.setSizeThreshold(maxMemSize);
       // Location to save data that is larger than maxMemSize.
-      factory.setRepository(new File("C:\\Users\\Akshay\\Eclipse-Luna-EE-Workspace\\WebClusteringFour\\WebClustering\\resources\\largeData"));
+      factory.setRepository(new File("resources"+ File.separator +"largeData"));
 
       // Create a new file upload handler
       ServletFileUpload upload = new ServletFileUpload(factory);

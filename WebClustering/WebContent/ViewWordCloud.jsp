@@ -24,10 +24,9 @@ String cluster = request.getParameter("selectcluster");
 MainFile mfObj = new MainFile();
 mfObj.drawWordCloud(cluster);
 
-
 File f=new File("");
-String name=f.getAbsolutePath()+ "\\wordcloud_" + cluster+".png";
-//System.out.println(name);
+String name=f.getAbsolutePath()+ ""+ File.separator +"wordcloud_" + cluster+".png";
+System.out.println("Verify This-!!!"+name);
 out.println("<h1>" + "WORD CLOUD FOR THE CLUSTER:</h1>");
 out.print("<center><img src='"+name+"' alt='bar chart'  width='800' height='600' border='0' /></center>");
 %>
